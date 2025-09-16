@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Motel Room Management</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['Inter', 'sans-serif'],
+            },
+            animation: {
+              'fade-in-up': 'fadeInUp 0.3s ease-out forwards',
+              'fade-in-left': 'fadeInLeft 0.4s ease-out forwards',
+              'pulse-glow': 'pulseGlow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+              'aurora': 'aurora 6s linear infinite',
+              'spin-slow': 'spin 3s linear infinite',
+              'aurora-flow': 'aurora-flow 15s ease-in-out infinite',
+            },
+            keyframes: {
+              fadeInUp: {
+                'from': { opacity: 0, transform: 'translateY(20px)' },
+                'to': { opacity: 1, transform: 'translateY(0)' },
+              },
+              fadeInLeft: {
+                'from': { opacity: 0, transform: 'translateX(-30px)' },
+                'to': { opacity: 1, transform: 'translateX(0)' },
+              },
+              pulseGlow: {
+                '0%, 100%': {
+                  boxShadow: '0 0 0 0 rgba(99, 102, 241, 0.7)',
+                },
+                '70%': {
+                  boxShadow: '0 0 0 10px rgba(99, 102, 241, 0)',
+                },
+              },
+              aurora: {
+                '0%, 100%': { backgroundPosition: '0% 50%' },
+                '50%': { backgroundPosition: '100% 50%' },
+              },
+              'aurora-flow': {
+                '0%': { backgroundPosition: '0% 50%' },
+                '50%': { backgroundPosition: '100% 50%' },
+                '100%': { backgroundPosition: '0% 50%' },
+              },
+              spin: {
+                'from': { transform: 'rotate(0deg)' },
+                'to': { transform: 'rotate(360deg)' },
+              }
+            }
+          }
+        }
+      }
+    </script>
+    <script type="importmap">
+{
+  "imports": {
+    "react/": "https://aistudiocdn.com/react@^19.1.1/",
+    "react": "https://aistudiocdn.com/react@^19.1.1",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.1.1/",
+    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.19.0"
+  }
+}
+</script>
+  <style>
+    /* Custom scrollbar for a more refined look */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background-color: rgba(156, 163, 175, 0.5);
+      border-radius: 20px;
+      border: 3px solid transparent;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background-color: rgba(156, 163, 175, 0.7);
+    }
+    
+    /* Default body background styles */
+    body {
+        background-color: #f1f5f9; /* bg-slate-100 */
+        transition: background-color 0.5s ease;
+    }
+    .dark body {
+        background-color: #0f172a; /* bg-slate-900 */
+    }
+
+    /* Animated background for the main grid view */
+    body.aurora-background-active {
+      background-color: #f1f5f9;
+      background-image: radial-gradient(ellipse at top, rgba(99, 102, 241, 0.2), transparent),
+                        radial-gradient(ellipse at bottom, rgba(168, 85, 247, 0.2), transparent);
+      background-size: 300% 300%;
+      animation: aurora-flow 15s ease-in-out infinite;
+    }
+
+    .dark body.aurora-background-active {
+      background-color: #0f172a;
+      background-image: radial-gradient(ellipse at top, rgba(99, 102, 241, 0.3), transparent),
+                        radial-gradient(ellipse at bottom, rgba(168, 85, 247, 0.3), transparent);
+    }
+  </style>
+<link rel="stylesheet" href="/index.css">
+</head>
+  <body class="dark:bg-slate-900 font-sans">
+    <div id="root"></div>
+    <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+    <script type="module" src="/index.tsx"></script>
+  </body>
+</html>

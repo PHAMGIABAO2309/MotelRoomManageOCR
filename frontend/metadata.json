@@ -1,0 +1,8 @@
+{
+  "name": "Copy of Motel Room Management",
+  "description": "An application to manage motel rooms, tenants, and track electricity and water usage for billing purposes.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
