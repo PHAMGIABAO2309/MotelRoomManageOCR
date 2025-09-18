@@ -71,7 +71,8 @@ export const SearchInputComponent = React.forwardRef<HTMLInputElement, SearchInp
                               {item.type === 'room' ? <HomeIcon className="w-4 h-4 mr-2"/> : <UserIcon className="w-4 h-4 mr-2"/>}
                               <div className="flex-1">
                                   <p className={highlightedIndex === index ? 'font-semibold' : 'font-medium'}>{item.room.name}</p>
-                                  {item.room.tenant && <p className={`text-xs ${highlightedIndex === index ? 'text-indigo-200' : 'text-slate-500 dark:text-slate-400'}`}>{item.room.tenant.name} - {item.room.tenant.phone}</p>}
+                                  {/* Fix: Changed 'item.room.tenant' to 'item.room.tenants' and displayed the first tenant's info. */}
+                                  {item.room.tenants && item.room.tenants.length > 0 && <p className={`text-xs ${highlightedIndex === index ? 'text-indigo-200' : 'text-slate-500 dark:text-slate-400'}`}>{item.room.tenants[0].name} - {item.room.tenants[0].phone}</p>}
                               </div>
                           </div>
                       </div>

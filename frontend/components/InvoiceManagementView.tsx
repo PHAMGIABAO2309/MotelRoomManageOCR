@@ -1,5 +1,5 @@
 import React, { useMemo, useRef, useEffect, useState } from 'react';
-import { Room, UsageRecord } from '../types';
+import { Room, UsageRecord, Tenant } from '../types';
 import { PrinterIcon, ChevronLeftIcon, ChevronRightIcon, MagnifyingGlassIcon, HomeIcon, CheckCircleIcon, ClockIcon, CalendarDaysIcon, ChevronUpDownIcon, DocumentArrowDownIcon } from './icons';
 import BillHistory from './BillHistory';
 
@@ -112,12 +112,13 @@ interface InvoiceManagementViewProps {
   sortBy: 'newest' | 'oldest';
   onSortByChange: (sortBy: 'newest' | 'oldest') => void;
   onOpenInvoice: (room: Room, record: UsageRecord) => void;
+  onOpenPaymentQRModal: (room: Room, record: UsageRecord) => void;
   onMarkAsPaid: (roomId: string, recordId: string) => void;
   canEdit: boolean;
   onExportToExcel: () => void;
   onEditInvoice: (invoice: InvoiceWithRoom) => void;
   onDeleteInvoice: (invoice: InvoiceWithRoom) => void;
-  onViewTenant: (invoice: InvoiceWithRoom) => void;
+  onOpenTenantDetail: (tenant: Tenant) => void;
 }
 
 const InvoiceManagementView: React.FC<InvoiceManagementViewProps> = ({ 
@@ -135,13 +136,14 @@ const InvoiceManagementView: React.FC<InvoiceManagementViewProps> = ({
     onFilterStatusChange,
     sortBy,
     onSortByChange,
-    onOpenInvoice, 
+    onOpenInvoice,
+    onOpenPaymentQRModal,
     onMarkAsPaid, 
     canEdit,
     onExportToExcel,
     onEditInvoice,
     onDeleteInvoice,
-    onViewTenant
+    onOpenTenantDetail
 }) => {
 
   const findRoomForInvoice = (invoice: typeof invoices[0]): Room | undefined => {
@@ -237,15 +239,16 @@ const InvoiceManagementView: React.FC<InvoiceManagementViewProps> = ({
             displayRoomInfo={true}
             onMarkAsPaid={(invoice) => onMarkAsPaid(invoice.roomId!, invoice.id)}
             onOpenInvoice={(invoice) => {
-// Fix: The 'invoice' parameter from BillHistory's callbacks is of a broader type.
-// Casting it to the more specific 'InvoiceWithRoom' type resolves the mismatch. This is safe because
-// we know the 'invoices' prop passed to BillHistory contains objects of type 'InvoiceWithRoom'.
                 const room = findRoomForInvoice(invoice as InvoiceWithRoom);
                 if(room) onOpenInvoice(room, invoice);
             }}
+            onOpenPaymentQR={(invoice) => {
+                const room = findRoomForInvoice(invoice as InvoiceWithRoom);
+                if(room) onOpenPaymentQRModal(room, invoice);
+            }}
             onOpenEdit={(invoice) => onEditInvoice(invoice as InvoiceWithRoom)}
             onDelete={(invoice) => onDeleteInvoice(invoice as InvoiceWithRoom)}
-            onViewTenant={(invoice) => onViewTenant(invoice as InvoiceWithRoom)}
+            onOpenTenantDetail={(invoice) => invoice.tenantsSnapshot[0] && onOpenTenantDetail(invoice.tenantsSnapshot[0])}
         />
       </div>
 

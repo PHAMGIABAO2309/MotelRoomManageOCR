@@ -1,13 +1,14 @@
 import React from 'react';
-import { Room, UsageRecord } from '../types';
-import { UserIcon, PrinterIcon, IdentificationIcon } from './icons';
+import { Room, UsageRecord, User, Tenant } from '../types';
+import { UserIcon, PrinterIcon, IdentificationIcon, QrCodeIcon, UsersIcon } from './icons';
 import { ELECTRIC_RATE, WATER_RATE } from '../constants';
 
 const BillHistoryForTenant: React.FC<{
     room: Room; 
     history: UsageRecord[],
-    onOpenInvoice: (room: Room, record: UsageRecord) => void
-}> = ({ room, history, onOpenInvoice }) => {
+    onOpenInvoice: (room: Room, record: UsageRecord) => void;
+    onOpenPaymentQR: (room: Room, record: UsageRecord) => void;
+}> = ({ room, history, onOpenInvoice, onOpenPaymentQR }) => {
     if (history.length === 0) {
         return <p className="text-center text-slate-500 dark:text-slate-400 mt-4">Chưa có lịch sử ghi điện nước.</p>;
     }
@@ -37,9 +38,14 @@ const BillHistoryForTenant: React.FC<{
                                 <td className="px-4 py-4">{record.waterUsage} ({record.waterReading})</td>
                                 <td className="px-4 py-4 font-semibold text-slate-900 dark:text-white">{record.billAmount.toLocaleString('vi-VN')}</td>
                                 <td className="px-4 py-4">
-                                    <span className={`font-semibold ${record.isPaid ? 'text-teal-500' : 'text-amber-500'}`}>
-                                        {record.isPaid ? 'Đã thanh toán' : 'Chưa thanh toán'}
-                                    </span>
+                                     {record.isPaid ? (
+                                        <span className="font-semibold text-teal-500">Đã thanh toán</span>
+                                     ) : (
+                                        <button onClick={() => onOpenPaymentQR(room, record)} className="inline-flex items-center justify-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:focus:ring-offset-slate-800">
+                                            <QrCodeIcon className="w-4 h-4 mr-1.5"/>
+                                            Thanh toán QR
+                                        </button>
+                                     )}
                                 </td>
                                 <td className="px-4 py-4 text-center">
                                     <button onClick={() => onOpenInvoice(room, record)} className="p-1.5 rounded-md text-slate-500 hover:bg-slate-200 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-slate-600 dark:hover:text-white transition" title="In hóa đơn">
@@ -69,9 +75,14 @@ const BillHistoryForTenant: React.FC<{
                              <p><strong>Nước:</strong> {record.waterUsage} m³ (Chỉ số: {record.waterReading})</p>
                         </div>
                         <div className="mt-3">
-                            <span className={`font-semibold text-sm ${record.isPaid ? 'text-teal-600 dark:text-teal-400' : 'text-amber-600 dark:text-amber-400'}`}>
-                                {record.isPaid ? '✓ Đã thanh toán' : 'Chưa thanh toán'}
-                            </span>
+                             {record.isPaid ? (
+                                <span className="font-semibold text-sm text-teal-600 dark:text-teal-400">✓ Đã thanh toán</span>
+                             ) : (
+                                <button onClick={() => onOpenPaymentQR(room, record)} className="w-full inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:focus:ring-offset-slate-800">
+                                    <QrCodeIcon className="w-5 h-5 mr-2"/>
+                                    Thanh toán qua QR
+                                </button>
+                             )}
                         </div>
                     </div>
                 ))}
@@ -82,11 +93,16 @@ const BillHistoryForTenant: React.FC<{
 
 interface TenantViewProps {
     room: Room;
+    currentUser: User;
     onOpenInvoice: (room: Room, record: UsageRecord) => void;
+    onOpenPaymentQRModal: (room: Room, record: UsageRecord) => void;
 }
 
-const TenantView: React.FC<TenantViewProps> = ({ room, onOpenInvoice }) => {
-  if (!room.tenant) {
+const TenantView: React.FC<TenantViewProps> = ({ room, currentUser, onOpenInvoice, onOpenPaymentQRModal }) => {
+  const selfTenant = room.tenants.find(t => t.id === currentUser.id);
+  const otherTenants = room.tenants.filter(t => t.id !== currentUser.id);
+
+  if (!selfTenant) {
     return <p>Lỗi: Không tìm thấy thông tin người thuê.</p>
   }
 
@@ -101,8 +117,8 @@ const TenantView: React.FC<TenantViewProps> = ({ room, onOpenInvoice }) => {
         <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-lg border border-slate-200 dark:border-slate-700">
           <h3 className="font-semibold text-lg mb-3 text-slate-800 dark:text-slate-100 flex items-center"><UserIcon className="mr-2"/>Thông Tin Cá Nhân</h3>
             <div className="flex items-start space-x-4">
-                 {room.tenant.avatarUrl ? (
-                    <img src={room.tenant.avatarUrl} alt="Avatar" className="w-24 h-24 rounded-lg object-cover border-2 border-slate-300 dark:border-slate-600" />
+                 {selfTenant.avatarUrl ? (
+                    <img src={selfTenant.avatarUrl} alt="Avatar" className="w-24 h-24 rounded-lg object-cover border-2 border-slate-300 dark:border-slate-600" />
                 ) : (
                     <div className="w-24 h-24 rounded-lg bg-slate-200 dark:bg-slate-600 flex items-center justify-center">
                         <UserIcon className="w-12 h-12 text-slate-400" />
@@ -110,15 +126,29 @@ const TenantView: React.FC<TenantViewProps> = ({ room, onOpenInvoice }) => {
                 )}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1 text-sm flex-1 text-slate-700 dark:text-slate-300">
                     <div className="sm:col-span-2">
-                        <p><strong>Tên:</strong> {room.tenant.name}</p>
+                        <p><strong>Tên:</strong> {selfTenant.name}</p>
                     </div>
-                    {room.tenant.dateOfBirth && <div><p><strong>Ngày sinh:</strong> {new Date(room.tenant.dateOfBirth).toLocaleDateString('vi-VN')}</p></div>}
-                    {room.tenant.sex && <div><p><strong>Giới tính:</strong> {room.tenant.sex}</p></div>}
-                    {room.tenant.idNumber && <div><p><strong>CCCD:</strong> {room.tenant.idNumber}</p></div>}
-                    <div><p><strong>SĐT:</strong> {room.tenant.phone}</p></div>
-                    <div><p><strong>Ngày vào:</strong> {new Date(room.tenant.moveInDate).toLocaleDateString('vi-VN')}</p></div>
+                    {selfTenant.dateOfBirth && <div><p><strong>Ngày sinh:</strong> {new Date(selfTenant.dateOfBirth).toLocaleDateString('vi-VN')}</p></div>}
+                    {selfTenant.sex && <div><p><strong>Giới tính:</strong> {selfTenant.sex}</p></div>}
+                    {selfTenant.idNumber && <div><p><strong>CCCD:</strong> {selfTenant.idNumber}</p></div>}
+                    {selfTenant.occupation && <div><p><strong>Nghề nghiệp:</strong> {selfTenant.occupation}</p></div>}
+                    <div><p><strong>SĐT:</strong> {selfTenant.phone}</p></div>
+                    <div><p><strong>Ngày vào:</strong> {new Date(selfTenant.moveInDate).toLocaleDateString('vi-VN')}</p></div>
                 </div>
             </div>
+             {otherTenants.length > 0 && (
+                <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-600">
+                    <h4 className="font-semibold text-md mb-2 text-slate-800 dark:text-slate-100 flex items-center"><UsersIcon className="mr-2"/>Bạn cùng phòng</h4>
+                    <div className="space-y-2">
+                        {otherTenants.map(tenant => (
+                            <div key={tenant.id} className="flex items-center space-x-3 p-2 bg-white dark:bg-slate-700/50 rounded-md">
+                                {tenant.avatarUrl ? <img src={tenant.avatarUrl} alt="Avatar" className="w-8 h-8 rounded-full object-cover" /> : <UserIcon className="w-8 h-8 p-1 text-slate-400 bg-slate-200 dark:bg-slate-600 rounded-full"/>}
+                                <span className="text-sm text-slate-700 dark:text-slate-300">{tenant.name} - {tenant.phone}</span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+             )}
         </div>
         {/* Room Info */}
         <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-lg border border-slate-200 dark:border-slate-700">
@@ -137,6 +167,7 @@ const TenantView: React.FC<TenantViewProps> = ({ room, onOpenInvoice }) => {
             room={room}
             history={room.usageHistory} 
             onOpenInvoice={onOpenInvoice}
+            onOpenPaymentQR={onOpenPaymentQRModal}
         />
       </div>
     </div>

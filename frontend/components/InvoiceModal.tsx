@@ -29,6 +29,8 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({ isOpen, onClose, room, reco
   const waterBill = record.waterUsage * WATER_RATE;
   
   const paymentPeriod = `${new Date(record.startDate).toLocaleDateString('vi-VN')} - ${new Date(record.endDate).toLocaleDateString('vi-VN')}`;
+  
+  const tenantNames = record.tenantsSnapshot.map(t => t.name).join(', ');
 
   return (
     <>
@@ -48,7 +50,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({ isOpen, onClose, room, reco
 
           {/* Customer Info */}
           <div className="text-sm space-y-1">
-            <div className="flex justify-between"><span>Người thuê:</span> <span className="font-semibold">{record.tenantSnapshot.name}</span></div>
+            <div className="flex justify-between"><span>Người thuê:</span> <span className="font-semibold text-right">{tenantNames}</span></div>
             <div className="flex justify-between"><span>Phòng:</span> <span className="font-semibold">{room.name}</span></div>
             <div className="flex justify-between"><span>Kỳ thanh toán:</span> <span className="font-semibold">{paymentPeriod}</span></div>
           </div>

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Room, Tenant, ModalType, UsageRecord, User, PageType } from './types';
+import { Room, Tenant, ModalType, UsageRecord, User, PageType, Notification } from './types';
 import { createRoomHandlers } from './roomHandlers';
 import { createUIHandlers } from './uiHandlers';
 import { createUserHandlers } from './userHandlers';
@@ -18,6 +18,7 @@ const tenant1: Tenant = {
   idNumber: "012345678910",
   placeOfOrigin: "Hà Nội",
   placeOfResidence: "TP. Hồ Chí Minh",
+  occupation: "Kỹ sư phần mềm",
 };
 
 const initialRooms: Room[] = [
@@ -26,7 +27,7 @@ const initialRooms: Room[] = [
     name: 'Phòng 101',
     status: 'occupied',
     baseRent: 2000000,
-    tenant: tenant1,
+    tenants: [tenant1],
     usageHistory: [
       {
         id: 'usage-1',
@@ -38,7 +39,7 @@ const initialRooms: Room[] = [
         waterUsage: 10,
         billAmount: 2600000,
         isPaid: true,
-        tenantSnapshot: tenant1,
+        tenantsSnapshot: [tenant1],
       },
        {
         id: 'usage-2',
@@ -50,7 +51,7 @@ const initialRooms: Room[] = [
         waterUsage: 5,
         billAmount: 2300000,
         isPaid: false,
-        tenantSnapshot: tenant1,
+        tenantsSnapshot: [tenant1],
       },
     ],
     archivedUsageHistory: [],
@@ -60,7 +61,7 @@ const initialRooms: Room[] = [
     name: 'Phòng 102',
     status: 'vacant',
     baseRent: 1800000,
-    tenant: null,
+    tenants: [],
     usageHistory: [],
     archivedUsageHistory: [],
   }
@@ -96,7 +97,6 @@ export const useAppLogic = () => {
     const [suggestedRoomInfo, setSuggestedRoomInfo] = useState<{ name: string; rent?: number }>({ name: '' });
     const [invoiceToView, setInvoiceToView] = useState<{ room: Room, record: UsageRecord } | null>(null);
     const [recordToEdit, setRecordToEdit] = useState<UsageRecord | null>(null);
-    const [tenantToShow, setTenantToShow] = useState<Tenant | null>(null);
     const [isLoggedIn, setIsLoggedIn] = useState(() => localStorage.getItem('isLoggedIn') === 'true');
     const [currentUser, setCurrentUser] = useState<AuthenticatedUser | null>(() => {
         const savedUser = localStorage.getItem('currentUser');
@@ -144,6 +144,13 @@ export const useAppLogic = () => {
     const [draggedItem, setDraggedItem] = useState<Room | null>(null);
     const [dragOverItem, setDragOverItem] = useState<Room | null>(null);
     const [roomFilterStatus, setRoomFilterStatus] = useState<'all' | 'occupied' | 'vacant'>('all');
+    const [invoiceForQR, setInvoiceForQR] = useState<{ room: Room, record: UsageRecord } | null>(null);
+    const [tenantToView, setTenantToView] = useState<Tenant | null>(null);
+
+    // Notification State
+    const [notifications, setNotifications] = useState<Notification[]>([]);
+    const [isNotificationPanelOpen, setIsNotificationPanelOpen] = useState(false);
+    const [hasUnreadNotifications, setHasUnreadNotifications] = useState(false);
 
     // State for InvoiceManagementView
     const [invoiceFilterRoomId, setInvoiceFilterRoomId] = useState('all');
@@ -151,6 +158,11 @@ export const useAppLogic = () => {
     const [invoiceSortBy, setInvoiceSortBy] = useState<'newest' | 'oldest'>('newest');
     const [invoiceSearchQuery, setInvoiceSearchQuery] = useState('');
     const [invoiceCurrentPage, setInvoiceCurrentPage] = useState(1);
+    
+    // State for Tenant Archive View
+    const [tenantArchiveSearchQuery, setTenantArchiveSearchQuery] = useState('');
+    const [tenantArchiveCurrentPage, setTenantArchiveCurrentPage] = useState(1);
+    const [tenantArchiveFilterRoomId, setTenantArchiveFilterRoomId] = useState('all');
 
 
     // --- REFS ---
@@ -160,6 +172,11 @@ export const useAppLogic = () => {
     const settingsMenuRef = useRef<HTMLDivElement>(null);
     const roomSelectorRef = useRef<HTMLDivElement>(null);
     const roomSelectorInputRef = useRef<HTMLInputElement>(null);
+    const notificationPanelRef = useRef<HTMLDivElement>(null);
+    // Refs for mobile drag-and-drop
+    const touchStartTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const isLongPressRef = useRef(false);
+    const initialTouchPositionRef = useRef<{ x: number, y: number } | null>(null);
     
     // --- EFFECTS ---
     useEffect(() => { localStorage.setItem('motelRooms', JSON.stringify(rooms)); }, [rooms]);
@@ -185,6 +202,7 @@ export const useAppLogic = () => {
         if (searchContainerRef.current && !searchContainerRef.current.contains(event.target as Node)) setIsSearchFocused(false);
         if (settingsMenuRef.current && !settingsMenuRef.current.contains(event.target as Node)) setIsSettingsOpen(false);
         if (roomSelectorRef.current && !roomSelectorRef.current.contains(event.target as Node)) setIsRoomSelectorOpen(false);
+        if (notificationPanelRef.current && !notificationPanelRef.current.contains(event.target as Node)) setIsNotificationPanelOpen(false);
       };
       document.addEventListener('mousedown', handleClickOutside);
       return () => document.removeEventListener('mousedown', handleClickOutside);
@@ -192,6 +210,7 @@ export const useAppLogic = () => {
 
     useEffect(() => { setUserCurrentPage(1); }, [userSearchQuery]);
     useEffect(() => { setInvoiceCurrentPage(1); }, [invoiceSearchQuery, invoiceFilterRoomId, invoiceFilterStatus]);
+    useEffect(() => { setTenantArchiveCurrentPage(1); }, [tenantArchiveSearchQuery, tenantArchiveFilterRoomId]);
     
     useEffect(() => {
         if (isRoomSelectorOpen) {
@@ -200,30 +219,94 @@ export const useAppLogic = () => {
         }
     }, [isRoomSelectorOpen]);
 
+     // --- SELECTORS (Derived State) ---
+    const selectors = useAppSelectors({
+        rooms, users, searchQuery, userSearchQuery, userCurrentPage, roomSelectorQuery, isLoggedIn, currentUser,
+        currentPage, selectedRoom, roomFilterStatus, invoiceSearchQuery, invoiceFilterRoomId,
+        invoiceFilterStatus, invoiceSortBy, invoiceCurrentPage, tenantArchiveSearchQuery, tenantArchiveCurrentPage,
+        tenantArchiveFilterRoomId,
+    });
+    const { canEdit } = selectors;
+
+    // Notification Generation Effect
+    useEffect(() => {
+        if (!canEdit) {
+            setNotifications([]);
+            return;
+        }
+
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        const newNotifications: Notification[] = [];
+
+        rooms.forEach((room: Room) => {
+            if (room.status === 'occupied') {
+                room.usageHistory.forEach((record: UsageRecord) => {
+                    if (!record.isPaid) {
+                        const endDate = new Date(record.endDate);
+                        endDate.setHours(0, 0, 0, 0);
+                        const diffTime = today.getTime() - endDate.getTime();
+                        
+                        if (diffTime >= 0) {
+                            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                            let message = '';
+                            if (diffDays === 0) {
+                                message = `Hóa đơn phòng ${room.name} đến hạn hôm nay.`;
+                            } else {
+                                message = `Hóa đơn phòng ${room.name} đã quá hạn ${diffDays} ngày.`;
+                            }
+                            
+                            newNotifications.push({
+                                id: `notif-${record.id}`,
+                                roomId: room.id,
+                                recordId: record.id,
+                                message: message,
+                                date: record.endDate,
+                            });
+                        }
+                    }
+                });
+            }
+        });
+
+        newNotifications.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+        
+        if (JSON.stringify(newNotifications) !== JSON.stringify(notifications)) {
+            setNotifications(newNotifications);
+            if(newNotifications.length > 0) {
+                setHasUnreadNotifications(true);
+            }
+        }
+    }, [rooms, canEdit]);
+
+
     // --- CONTEXT for handlers/selectors ---
     // This object bundles all state, setters, and refs to pass to external logic files
     const logicContext = {
         // State
-        rooms, users, selectedRoom, activeModal, suggestedRoomInfo, invoiceToView, recordToEdit, tenantToShow,
+        rooms, users, selectedRoom, activeModal, suggestedRoomInfo, invoiceToView, recordToEdit,
         isLoggedIn, currentUser, tenantRoom, searchQuery, isSearchFocused, highlightedIndex, isSettingsOpen,
         isLogoutConfirmOpen, isRoomSelectorOpen, roomSelectorQuery, currentPage, userToEdit, userToDelete,
         invoiceToDelete, userSearchQuery, userCurrentPage, theme, isListening, draggedItem, dragOverItem,
-        isSearchActiveMobile, roomFilterStatus, invoiceFilterRoomId, invoiceFilterStatus, invoiceSortBy,
-        invoiceSearchQuery, invoiceCurrentPage,
+        isSearchActiveMobile, roomFilterStatus, invoiceForQR, invoiceFilterRoomId, invoiceFilterStatus, invoiceSortBy,
+        invoiceSearchQuery, invoiceCurrentPage, notifications, isNotificationPanelOpen, hasUnreadNotifications,
+        tenantArchiveSearchQuery, tenantArchiveCurrentPage, tenantArchiveFilterRoomId,
+        tenantToView,
         // Setters
         setRooms, setUsers, setSelectedRoom, setActiveModal, setSuggestedRoomInfo, setInvoiceToView,
-        setRecordToEdit, setTenantToShow, setIsLoggedIn, setCurrentUser, setTenantRoom, setSearchQuery,
+        setRecordToEdit, setIsLoggedIn, setCurrentUser, setTenantRoom, setSearchQuery,
         setIsSearchFocused, setHighlightedIndex, setIsSettingsOpen, setIsLogoutConfirmOpen, setIsRoomSelectorOpen,
         setRoomSelectorQuery, setCurrentPage, setUserToEdit, setUserToDelete, setInvoiceToDelete, setUserSearchQuery,
         setUserCurrentPage, setTheme, setIsListening, setDraggedItem, setDragOverItem, setIsSearchActiveMobile,
-        setRoomFilterStatus, setInvoiceFilterRoomId, setInvoiceFilterStatus, setInvoiceSortBy,
-        setInvoiceSearchQuery, setInvoiceCurrentPage,
+        setRoomFilterStatus, setInvoiceForQR, setInvoiceFilterRoomId, setInvoiceFilterStatus, setInvoiceSortBy,
+        setInvoiceSearchQuery, setInvoiceCurrentPage, setNotifications, setIsNotificationPanelOpen, setHasUnreadNotifications,
+        setTenantArchiveSearchQuery, setTenantArchiveCurrentPage, setTenantArchiveFilterRoomId,
+        setTenantToView,
         // Refs
-        recognitionRef, searchInputRef, searchContainerRef, settingsMenuRef, roomSelectorRef, roomSelectorInputRef
+        recognitionRef, searchInputRef, searchContainerRef, settingsMenuRef, roomSelectorRef, roomSelectorInputRef, notificationPanelRef,
+        touchStartTimeoutRef, isLongPressRef, initialTouchPositionRef,
     };
-
-    // --- SELECTORS (Derived State) ---
-    const selectors = useAppSelectors(logicContext);
 
     // --- HANDLERS ---
     const roomHandlers = createRoomHandlers(logicContext);

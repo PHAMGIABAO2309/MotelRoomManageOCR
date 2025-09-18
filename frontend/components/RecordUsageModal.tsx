@@ -156,8 +156,9 @@ const RecordUsageModal: React.FC<RecordUsageModalProps> = ({ isOpen, onClose, on
         setEndDate(new Date().toISOString().split('T')[0]);
         if (lastRecord) {
           setStartDate(lastRecord.endDate.split('T')[0]);
-        } else if (room.tenant) {
-          setStartDate(room.tenant.moveInDate.split('T')[0]);
+          // Fix: Changed 'room.tenant' to 'room.tenants' and checked for array length.
+        } else if (room.tenants && room.tenants.length > 0) {
+          setStartDate(room.tenants[0].moveInDate.split('T')[0]);
         } else {
           setStartDate('');
         }

@@ -12,7 +12,7 @@ interface RoomCardProps {
   onDragEnter: (e: React.DragEvent<HTMLDivElement>, room: Room) => void;
   onDragEnd: () => void;
   onTogglePin: (roomId: string) => void;
-  onTouchStart: (e: React.TouchEvent<HTMLDivElement>) => void;
+  onTouchStart: (e: React.TouchEvent<HTMLDivElement>, room: Room) => void;
   onTouchMove: (e: React.TouchEvent<HTMLDivElement>) => void;
   onTouchEnd: (e: React.TouchEvent<HTMLDivElement>) => void;
 }
@@ -43,6 +43,18 @@ const RoomCard: React.FC<RoomCardProps> = ({
     onTogglePin(room.id);
   };
 
+  const displayTenantNames = () => {
+    if (room.tenants.length === 0) {
+      return 'Chưa có người thuê';
+    }
+    const names = room.tenants.map(t => t.name);
+    const joinedNames = names.join(', ');
+    if (joinedNames.length > 35) {
+      return room.tenants.map(t => t.name.split(' ').pop()).join(', ');
+    }
+    return joinedNames;
+  };
+
   return (
     <div
       onClick={() => onSelectRoom(room)}
@@ -51,11 +63,11 @@ const RoomCard: React.FC<RoomCardProps> = ({
       onDragEnter={(e) => onDragEnter(e, room)}
       onDragEnd={onDragEnd}
       onDragOver={(e) => e.preventDefault()}
-      onTouchStart={onTouchStart}
+      onTouchStart={(e) => onTouchStart(e, room)}
       onTouchMove={onTouchMove}
       onTouchEnd={onTouchEnd}
       data-room-id={room.id}
-      className={`relative group touch-none ${isDraggable ? 'cursor-grab' : 'cursor-pointer'}`}
+      className={`relative group ${isDraggable ? 'cursor-grab' : 'cursor-pointer'}`}
     >
       <div 
         className="absolute -inset-px rounded-lg bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 
@@ -94,8 +106,8 @@ const RoomCard: React.FC<RoomCardProps> = ({
           </div>
           <div className="mt-2 text-sm text-slate-600 dark:text-slate-400">
             <p className="flex items-center">
-              <UserIcon className="w-4 h-4 mr-2 text-slate-400" /> 
-              <span className="truncate">{room.status === 'occupied' && room.tenant ? room.tenant.name : 'Chưa có người thuê'}</span>
+              <UserIcon className="w-4 h-4 mr-2 text-slate-400 flex-shrink-0" /> 
+              <span className="truncate">{displayTenantNames()}</span>
             </p>
           </div>
         </div>

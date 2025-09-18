@@ -23,33 +23,35 @@ const App: React.FC = () => {
     } = appLogic;
 
     useEffect(() => {
+        // This class is now used for the more subtle aurora effect on the room grid
         if (showBeautifulBackground) {
-            document.body.classList.add('aurora-background-active');
+            document.body.classList.add('aurora-subtle-background');
         } else {
-            document.body.classList.remove('aurora-background-active');
+            document.body.classList.remove('aurora-subtle-background');
         }
         return () => {
-            document.body.classList.remove('aurora-background-active');
+            document.body.classList.remove('aurora-subtle-background');
         };
     }, [showBeautifulBackground]);
 
-    if (!isLoggedIn) {
-        return <LoginView onLogin={appLogic.handleLogin} />;
-    }
 
     return (
         <div className="min-h-screen bg-transparent text-slate-800 dark:text-slate-200 flex flex-col">
             <Header appLogic={appLogic} />
 
-            <main className={`flex-1 max-w-7xl mx-auto p-2 sm:p-6 lg:p-8 w-full ${showFooter ? 'pb-24 sm:pb-6 lg:pb-8' : ''}`}>
-                <MainContent appLogic={appLogic} />
+            <main className={`flex-1 flex flex-col w-full ${isLoggedIn ? 'max-w-7xl mx-auto p-2 sm:p-6 lg:p-8' : 'items-center justify-center p-4'}`}>
+                {isLoggedIn ? (
+                    <MainContent appLogic={appLogic} />
+                ) : (
+                    <LoginView onLogin={appLogic.handleLogin} />
+                )}
             </main>
             
-            {canEdit && !isSubPage && !selectedRoom && (
+            {isLoggedIn && canEdit && !selectedRoom && !isSubPage && (
                 <FloatingActionButton onClick={handleOpenAddRoomModal} />
             )}
 
-            {showFooter && <Footer rooms={rooms} onSetFilter={handleSetRoomFilter} currentFilter={roomFilterStatus} />}
+            {isLoggedIn && showFooter && <Footer rooms={rooms} onSetFilter={handleSetRoomFilter} currentFilter={roomFilterStatus} />}
 
             <ModalManager appLogic={appLogic} />
         </div>

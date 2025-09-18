@@ -2,25 +2,26 @@ import React from 'react';
 import { ModalType } from '../types';
 
 import AddRoomModal from './AddRoomModal';
-import AssignTenantModal from './AssignTenantModal';
+import ManageTenantsModal from './AssignTenantModal';
 import RecordUsageModal from './RecordUsageModal';
-import EditTenantModal from './EditTenantModal';
-import TenantDetailModal from './TenantDetailModal';
 import UserModal from './UserModal';
 import InvoiceModal from './InvoiceModal';
 import ConfirmModal from './ConfirmModal';
+import PaymentQRModal from './PaymentQRModal';
+import TenantDetailModal from './TenantDetailModal';
 
 const ModalManager: React.FC<{ appLogic: any }> = ({ appLogic }) => {
     const {
-        activeModal, selectedRoom, suggestedRoomInfo, recordToEdit, tenantToShow, userToEdit,
-        invoiceToView, isLogoutConfirmOpen, userToDelete, invoiceToDelete,
-        closeModal, handleAddRoom, handleAssignTenant, handleEditTenant, handleSaveUsage,
+        activeModal, selectedRoom, suggestedRoomInfo, recordToEdit, userToEdit,
+        invoiceToView, isLogoutConfirmOpen, userToDelete, invoiceToDelete, invoiceForQR,
+        tenantToView,
+        closeModal, handleAddRoom, handleUpdateTenants, handleSaveUsage,
         handleAddUser, handleUpdateUser, handleCloseInvoiceModal,
         setIsLogoutConfirmOpen, handleLogout, setUserToDelete, handleDeleteUser,
-        setInvoiceToDelete, handleConfirmDeleteInvoice,
+        setInvoiceToDelete, handleConfirmDeleteInvoice, handleMarkAsPaid
     } = appLogic;
 
-    if (!selectedRoom && [ModalType.ASSIGN_TENANT, ModalType.RECORD_USAGE, ModalType.EDIT_TENANT, ModalType.EDIT_USAGE, ModalType.TENANT_DETAIL, ModalType.CHECK_OUT].includes(activeModal)) {
+    if (!selectedRoom && [ModalType.MANAGE_TENANTS, ModalType.RECORD_USAGE, ModalType.EDIT_USAGE, ModalType.CHECK_OUT].includes(activeModal)) {
         return null;
     }
 
@@ -29,14 +30,25 @@ const ModalManager: React.FC<{ appLogic: any }> = ({ appLogic }) => {
             {(() => {
                 switch (activeModal) {
                     case ModalType.ADD_ROOM: return <AddRoomModal isOpen={true} onClose={closeModal} onAddRoom={handleAddRoom} suggestedName={suggestedRoomInfo.name} suggestedRent={suggestedRoomInfo.rent} />;
-                    case ModalType.ASSIGN_TENANT: return <AssignTenantModal isOpen={true} onClose={closeModal} onAssignTenant={handleAssignTenant} />;
+                    case ModalType.MANAGE_TENANTS: return <ManageTenantsModal isOpen={true} onClose={closeModal} onSave={(tenants) => handleUpdateTenants(selectedRoom!.id, tenants)} room={selectedRoom!} />;
                     case ModalType.RECORD_USAGE: return <RecordUsageModal isOpen={true} onClose={closeModal} onSave={handleSaveUsage} room={selectedRoom!} />;
                     case ModalType.EDIT_USAGE: return <RecordUsageModal isOpen={true} onClose={closeModal} onSave={handleSaveUsage} room={selectedRoom!} recordToEdit={recordToEdit} />;
                     case ModalType.CHECK_OUT: return <RecordUsageModal isOpen={true} onClose={closeModal} onSave={handleSaveUsage} room={selectedRoom!} mode="checkout" />;
-                    case ModalType.EDIT_TENANT: return <EditTenantModal isOpen={true} onClose={closeModal} onEditTenant={handleEditTenant} tenant={selectedRoom!.tenant!} />;
-                    case ModalType.TENANT_DETAIL: return <TenantDetailModal isOpen={true} onClose={closeModal} tenant={tenantToShow} />
                     case ModalType.ADD_USER: return <UserModal isOpen={true} onClose={closeModal} onSave={handleAddUser} />;
                     case ModalType.EDIT_USER: return <UserModal isOpen={true} onClose={closeModal} onSave={handleUpdateUser} userToEdit={userToEdit} />;
+                    case ModalType.PAYMENT_QR: return invoiceForQR && (
+                        <PaymentQRModal
+                            isOpen={true}
+                            onClose={closeModal}
+                            onConfirm={() => {
+                                handleMarkAsPaid(invoiceForQR.room.id, invoiceForQR.record.id);
+                                closeModal();
+                            }}
+                            room={invoiceForQR.room}
+                            record={invoiceForQR.record}
+                        />
+                    );
+                    case ModalType.VIEW_TENANT_DETAIL: return <TenantDetailModal isOpen={true} onClose={closeModal} tenant={tenantToView} />;
                     default: return null;
                 }
             })()}

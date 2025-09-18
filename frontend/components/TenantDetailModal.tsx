@@ -42,6 +42,7 @@ const TenantDetailModal: React.FC<TenantDetailModalProps> = ({ isOpen, onClose, 
             <DetailItem label="Ngày sinh" value={tenant.dateOfBirth ? new Date(tenant.dateOfBirth).toLocaleDateString('vi-VN') : ''} />
             <DetailItem label="Giới tính" value={tenant.sex} />
             <DetailItem label="Quốc tịch" value={tenant.nationality} />
+            <DetailItem label="Nghề nghiệp" value={tenant.occupation} />
             <DetailItem label="Ngày chuyển vào" value={new Date(tenant.moveInDate).toLocaleDateString('vi-VN')} />
             <DetailItem label="Quê quán" value={tenant.placeOfOrigin} />
             <DetailItem label="Nơi thường trú" value={tenant.placeOfResidence} />

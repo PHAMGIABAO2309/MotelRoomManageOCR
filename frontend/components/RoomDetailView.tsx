@@ -1,25 +1,24 @@
 import React, { useMemo } from 'react';
 import { Room, UsageRecord, Tenant } from '../types';
-import { ArrowLeftIcon, UserIcon, PencilIcon } from './icons';
+import { ArrowLeftIcon, UserIcon, PencilIcon, UsersIcon } from './icons';
 import { ELECTRIC_RATE, WATER_RATE } from '../constants';
 import BillHistory from './BillHistory';
 
 interface RoomDetailViewProps {
   room: Room;
   onBack: () => void;
-  onOpenModal: (type: 'assignTenant' | 'recordUsage' | 'editTenant') => void;
+  onOpenModal: (type: 'manageTenants' | 'recordUsage') => void;
   onMarkAsPaid: (roomId: string, recordId: string) => void;
-  onRemoveTenant: () => void;
   onOpenInvoice: (room: Room, record: UsageRecord) => void;
   onOpenEditUsageModal: (record: UsageRecord) => void;
   onDeleteUsageRecord: (recordId: string) => void;
   onOpenTenantDetail: (tenant: Tenant) => void;
   canEdit: boolean;
   onOpenCheckoutModal: () => void;
+  onOpenPaymentQRModal: (room: Room, record: UsageRecord) => void;
 }
 
-const RoomDetailView: React.FC<RoomDetailViewProps> = ({ room, onBack, onOpenModal, onMarkAsPaid, onRemoveTenant, onOpenInvoice, onOpenEditUsageModal, onDeleteUsageRecord, onOpenTenantDetail, canEdit, onOpenCheckoutModal }) => {
-  const tenantModalAction = room.status === 'occupied' && room.tenant ? 'editTenant' : 'assignTenant';
+const RoomDetailView: React.FC<RoomDetailViewProps> = ({ room, onBack, onOpenModal, onMarkAsPaid, onOpenInvoice, onOpenEditUsageModal, onDeleteUsageRecord, onOpenTenantDetail, canEdit, onOpenCheckoutModal, onOpenPaymentQRModal }) => {
   
   const archivedHistoriesByTenant = useMemo(() => {
     if (!room.archivedUsageHistory || room.archivedUsageHistory.length === 0) {
@@ -27,24 +26,24 @@ const RoomDetailView: React.FC<RoomDetailViewProps> = ({ room, onBack, onOpenMod
     }
 
     const groups: { [tenantId: string]: { tenant: Tenant, records: UsageRecord[] } } = {};
-
-    // Group records by tenant ID
+    
+    // This logic is imperfect for multi-tenant history, as it groups by the first tenant in the snapshot.
+    // For simplicity, we'll group by the first tenant's ID.
     for (const record of room.archivedUsageHistory) {
-        const tenantId = record.tenantSnapshot.id;
+        if (record.tenantsSnapshot.length === 0) continue;
+        const primaryTenant = record.tenantsSnapshot[0];
+        const tenantId = primaryTenant.id;
         if (!groups[tenantId]) {
             groups[tenantId] = {
-                tenant: record.tenantSnapshot,
+                tenant: primaryTenant, // The representative tenant for this group
                 records: []
             };
         }
         groups[tenantId].records.push(record);
     }
 
-    // Convert the groups object into an array and sort it
     return Object.values(groups).sort((a, b) => {
-        // Ensure there are records to sort by
         if (a.records.length === 0 || b.records.length === 0) return 0;
-        // Sort by the end date of the last record for each tenant, showing the most recent past tenant first
         const lastRecordA = a.records[a.records.length - 1];
         const lastRecordB = b.records[b.records.length - 1];
         return new Date(lastRecordB.endDate).getTime() - new Date(lastRecordA.endDate).getTime();
@@ -64,41 +63,41 @@ const RoomDetailView: React.FC<RoomDetailViewProps> = ({ room, onBack, onOpenMod
         {/* Tenant Info */}
         <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-lg border border-slate-200 dark:border-slate-700">
           <div className="flex justify-between items-start">
-            <h3 className="font-semibold text-lg mb-3 text-slate-800 dark:text-slate-100 flex items-center"><UserIcon className="mr-2"/>Thông Tin Người Thuê</h3>
+            <h3 className="font-semibold text-lg mb-3 text-slate-800 dark:text-slate-100 flex items-center"><UsersIcon className="mr-2"/>Thông Tin Người Thuê</h3>
             <button 
                 disabled={!canEdit} 
-                onClick={() => onOpenModal(tenantModalAction)} 
+                onClick={() => onOpenModal('manageTenants')} 
                 className="p-1.5 text-slate-500 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-400 rounded-md hover:bg-slate-200 dark:hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed" 
-                title={tenantModalAction === 'editTenant' ? "Chỉnh sửa thông tin" : "Thêm người thuê mới"}
+                title={"Quản lý người thuê"}
             >
                 <PencilIcon className="w-5 h-5"/>
             </button>
           </div>
-          {room.tenant ? (
-            <div className="flex items-start space-x-3">
-                 {room.tenant.avatarUrl ? (
-                    <img src={room.tenant.avatarUrl} alt="Avatar" className="w-20 h-20 rounded-lg object-cover border-2 border-slate-300 dark:border-slate-600" />
-                ) : (
-                    <div className="w-20 h-20 rounded-lg bg-slate-200 dark:bg-slate-600 flex items-center justify-center">
-                        <UserIcon className="w-10 h-10 text-slate-400" />
-                    </div>
-                )}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1 text-sm flex-1 text-slate-700 dark:text-slate-300">
-                    <div className="sm:col-span-2">
-                        <p><strong>Tên:</strong> {room.tenant.name}</p>
-                    </div>
-                    {room.tenant.dateOfBirth && <div><p><strong>Ngày sinh:</strong> {new Date(room.tenant.dateOfBirth).toLocaleDateString('vi-VN')}</p></div>}
-                    {room.tenant.sex && <div><p><strong>Giới tính:</strong> {room.tenant.sex}</p></div>}
-                    {room.tenant.idNumber && <div><p><strong>CCCD:</strong> {room.tenant.idNumber}</p></div>}
-                    <div><p><strong>SĐT:</strong> {room.tenant.phone}</p></div>
-                    <div><p><strong>Ngày vào:</strong> {new Date(room.tenant.moveInDate).toLocaleDateString('vi-VN')}</p></div>
-                    {room.tenant.nationality && <div><p><strong>Quốc tịch:</strong> {room.tenant.nationality}</p></div>}
-                    {room.tenant.placeOfOrigin && <div className="sm:col-span-2"><p><strong>Quê quán:</strong> {room.tenant.placeOfOrigin}</p></div>}
-                    {room.tenant.placeOfResidence && <div className="sm:col-span-2"><p><strong>Nơi thường trú:</strong> {room.tenant.placeOfResidence}</p></div>}
-                    <div className="sm:col-span-2">
-                        <button disabled={!canEdit || room.status !== 'occupied'} onClick={onRemoveTenant} className="text-sm text-red-500 hover:underline mt-2 disabled:text-slate-400 disabled:no-underline disabled:cursor-not-allowed">Xóa người thuê</button>
-                    </div>
+          {room.tenants.length > 0 ? (
+            <div className="space-y-4 max-h-60 overflow-y-auto pr-2">
+              {room.tenants.map(tenant => (
+                <div 
+                  key={tenant.id} 
+                  onClick={() => onOpenTenantDetail(tenant)}
+                  className="flex items-start space-x-3 p-2 rounded-md bg-white dark:bg-slate-700/50 shadow-sm cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                  role="button"
+                  aria-label={`Xem chi tiết của ${tenant.name}`}
+                >
+                  {tenant.avatarUrl ? (
+                      <img src={tenant.avatarUrl} alt="Avatar" className="w-16 h-16 rounded-lg object-cover border-2 border-slate-300 dark:border-slate-600" />
+                  ) : (
+                      <div className="w-16 h-16 rounded-lg bg-slate-200 dark:bg-slate-600 flex items-center justify-center flex-shrink-0">
+                          <UserIcon className="w-8 h-8 text-slate-400" />
+                      </div>
+                  )}
+                  <div className="text-sm text-slate-700 dark:text-slate-300">
+                      <p className="font-bold">{tenant.name}</p>
+                      <p>SĐT: {tenant.phone}</p>
+                      {tenant.idNumber && <p>CCCD: {tenant.idNumber}</p>}
+                      <p>Ngày vào: {new Date(tenant.moveInDate).toLocaleDateString('vi-VN')}</p>
+                  </div>
                 </div>
+              ))}
             </div>
           ) : (
             <div>
@@ -115,8 +114,8 @@ const RoomDetailView: React.FC<RoomDetailViewProps> = ({ room, onBack, onOpenMod
                 <p><strong>Giá nước:</strong> {WATER_RATE.toLocaleString('vi-VN')} VND/m³</p>
                 <p><strong>Trạng thái:</strong> <span className={room.status === 'occupied' ? 'text-teal-600 dark:text-teal-400' : 'text-amber-600 dark:text-amber-400'}>{room.status === 'occupied' ? 'Đã có người' : 'Còn trống'}</span></p>
                 <div className="mt-2 flex items-center space-x-2">
-                  <button onClick={() => onOpenModal('recordUsage')} disabled={!room.tenant || room.status !== 'occupied' || !canEdit} className="text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:ring-4 focus:outline-none focus:ring-indigo-300 rounded-lg px-3 py-1.5 text-center disabled:bg-slate-400 disabled:cursor-not-allowed dark:bg-indigo-500 dark:hover:bg-indigo-600 dark:focus:ring-indigo-800">Ghi Điện Nước</button>
-                  <button onClick={onOpenCheckoutModal} disabled={!room.tenant || room.status !== 'occupied' || !canEdit} className="text-sm font-medium text-white bg-rose-600 hover:bg-rose-700 focus:ring-4 focus:outline-none focus:ring-rose-300 rounded-lg px-3 py-1.5 text-center disabled:bg-slate-400 disabled:cursor-not-allowed dark:bg-rose-500 dark:hover:bg-rose-600 dark:focus:ring-rose-800">Trả phòng</button>
+                  <button onClick={() => onOpenModal('recordUsage')} disabled={room.tenants.length === 0 || !canEdit} className="text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:ring-4 focus:outline-none focus:ring-indigo-300 rounded-lg px-3 py-1.5 text-center disabled:bg-slate-400 disabled:cursor-not-allowed dark:bg-indigo-500 dark:hover:bg-indigo-600 dark:focus:ring-indigo-800">Ghi Điện Nước</button>
+                  <button onClick={onOpenCheckoutModal} disabled={room.tenants.length === 0 || !canEdit} className="text-sm font-medium text-white bg-rose-600 hover:bg-rose-700 focus:ring-4 focus:outline-none focus:ring-rose-300 rounded-lg px-3 py-1.5 text-center disabled:bg-slate-400 disabled:cursor-not-allowed dark:bg-rose-500 dark:hover:bg-rose-600 dark:focus:ring-rose-800">Trả phòng</button>
                 </div>
             </div>
         </div>
@@ -124,7 +123,7 @@ const RoomDetailView: React.FC<RoomDetailViewProps> = ({ room, onBack, onOpenMod
       
       <div>
         <h3 className="font-semibold text-xl mb-4 text-slate-800 dark:text-slate-100">
-          Lịch Sử Hóa Đơn {room.tenant ? `(${room.tenant.name})` : ''}
+          Lịch Sử Hóa Đơn Hiện tại
         </h3>
         <BillHistory 
             invoices={room.usageHistory} 
@@ -132,7 +131,8 @@ const RoomDetailView: React.FC<RoomDetailViewProps> = ({ room, onBack, onOpenMod
             onOpenInvoice={(invoice) => onOpenInvoice(room, invoice)}
             onOpenEdit={onOpenEditUsageModal}
             onDelete={(invoice) => onDeleteUsageRecord(invoice.id)}
-            onViewTenant={(invoice) => onOpenTenantDetail(invoice.tenantSnapshot)}
+            onOpenTenantDetail={(invoice) => invoice.tenantsSnapshot[0] && onOpenTenantDetail(invoice.tenantsSnapshot[0])}
+            onOpenPaymentQR={(invoice) => onOpenPaymentQRModal(room, invoice)}
             canEdit={canEdit}
             displayRoomInfo={false}
         />
@@ -141,12 +141,12 @@ const RoomDetailView: React.FC<RoomDetailViewProps> = ({ room, onBack, onOpenMod
       {archivedHistoriesByTenant.map((group) => (
         <div key={group.tenant.id} className="mt-8">
           <h3 className="font-semibold text-xl mb-4 text-slate-800 dark:text-slate-100">
-            Lịch sử cũ (Người thuê: {group.tenant.name})
+            Lịch sử cũ (Người thuê: {group.tenant.name},...)
           </h3>
           <BillHistory
               invoices={group.records}
               onOpenInvoice={(invoice) => onOpenInvoice(room, invoice)}
-              onViewTenant={(invoice) => onOpenTenantDetail(invoice.tenantSnapshot)}
+              onOpenTenantDetail={(invoice) => invoice.tenantsSnapshot[0] && onOpenTenantDetail(invoice.tenantsSnapshot[0])}
               canEdit={false}
               displayRoomInfo={false}
           />

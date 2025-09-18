@@ -1,5 +1,6 @@
+// Fix: Import 'useMemo' from 'react' to resolve the error.
 import { useMemo } from 'react';
-import { PageType, ModalType, Room } from './types';
+import { PageType, ModalType, Room, Notification, Tenant } from './types';
 import { ELECTRIC_RATE, WATER_RATE } from './constants';
 
 declare const XLSX: any;
@@ -8,10 +9,10 @@ export const createUIHandlers = ({
     rooms,
     setActiveModal,
     setRecordToEdit,
-    setTenantToShow,
     setUserToEdit,
     setSuggestedRoomInfo,
     setInvoiceToView,
+    setInvoiceForQR,
     setCurrentPage,
     setSelectedRoom,
     setIsSettingsOpen,
@@ -28,6 +29,8 @@ export const createUIHandlers = ({
     recognitionRef,
     setUserCurrentPage,
     userCurrentPage,
+    setTenantArchiveCurrentPage,
+    tenantArchiveCurrentPage,
     setIsRoomSelectorOpen,
     setRoomSelectorQuery,
     isSearchActiveMobile,
@@ -37,9 +40,13 @@ export const createUIHandlers = ({
     invoiceCurrentPage,
     invoiceFilterRoomId,
     setInvoiceToDelete,
+    setIsNotificationPanelOpen,
+    setHasUnreadNotifications,
+    setTenantArchiveSearchQuery,
+    setTenantToView,
 }: any, selectors: any) => {
 
-    const { searchSuggestions, totalUserPages, totalInvoicePages } = selectors;
+    const { searchSuggestions, totalUserPages, totalInvoicePages, totalTenantPages } = selectors;
 
     const isBrowserSupported = useMemo(() => !!(window.SpeechRecognition || window.webkitSpeechRecognition), []);
 
@@ -74,8 +81,9 @@ export const createUIHandlers = ({
     const closeModal = () => {
         setActiveModal(ModalType.NONE);
         setRecordToEdit(null);
-        setTenantToShow(null);
         setUserToEdit(null);
+        setInvoiceForQR(null);
+        setTenantToView(null);
     };
 
     const handleOpenInvoiceModal = (room: any, record: any) => setInvoiceToView({ room, record });
@@ -102,11 +110,6 @@ export const createUIHandlers = ({
         openModal(ModalType.CHECK_OUT);
     };
 
-    const handleOpenTenantDetailModal = (tenant: any) => {
-        setTenantToShow(tenant);
-        openModal(ModalType.TENANT_DETAIL);
-    };
-
     const handleOpenAddUserModal = () => {
         setUserToEdit(null);
         openModal(ModalType.ADD_USER);
@@ -115,6 +118,16 @@ export const createUIHandlers = ({
     const handleOpenEditUserModal = (user: any) => {
         setUserToEdit(user);
         openModal(ModalType.EDIT_USER);
+    };
+    
+    const handleOpenPaymentQRModal = (room: any, record: any) => {
+        setInvoiceForQR({ room, record });
+        openModal(ModalType.PAYMENT_QR);
+    };
+
+    const handleOpenTenantDetail = (tenant: Tenant) => {
+        setTenantToView(tenant);
+        openModal(ModalType.VIEW_TENANT_DETAIL);
     };
 
     const handleNavigateToUserManagement = () => {
@@ -125,6 +138,12 @@ export const createUIHandlers = ({
     
     const handleNavigateToInvoiceManagement = () => {
         setCurrentPage(PageType.INVOICE_MANAGEMENT);
+        setSelectedRoom(null);
+        setIsSettingsOpen(false);
+    };
+    
+    const handleNavigateToTenantArchive = () => {
+        setCurrentPage(PageType.TENANT_ARCHIVE);
         setSelectedRoom(null);
         setIsSettingsOpen(false);
     };
@@ -170,6 +189,14 @@ export const createUIHandlers = ({
             setInvoiceCurrentPage((prev: number) => prev + 1);
         } else if (direction === 'prev' && invoiceCurrentPage > 1) {
             setInvoiceCurrentPage((prev: number) => prev - 1);
+        }
+    };
+
+    const handleTenantArchivePageChange = (direction: 'next' | 'prev') => {
+        if (direction === 'next' && tenantArchiveCurrentPage < totalTenantPages) {
+            setTenantArchiveCurrentPage((prev: number) => prev + 1);
+        } else if (direction === 'prev' && tenantArchiveCurrentPage > 1) {
+            setTenantArchiveCurrentPage((prev: number) => prev - 1);
         }
     };
     
@@ -260,8 +287,23 @@ export const createUIHandlers = ({
       setInvoiceToDelete({ roomId: invoice.roomId, recordId: invoice.id });
     };
 
-    const handleViewTenantFromMgmt = (invoice: any) => {
-      handleOpenTenantDetailModal(invoice.tenantSnapshot);
+    const handleToggleNotificationPanel = () => {
+        setIsNotificationPanelOpen((prev: boolean) => {
+            const isOpen = !prev;
+            if (isOpen) {
+                setHasUnreadNotifications(false); // Mark as read when opened
+            }
+            return isOpen;
+        });
+    };
+
+    const handleNotificationClick = (notification: Notification) => {
+        const room = rooms.find((r: Room) => r.id === notification.roomId);
+        if (room) {
+            setSelectedRoom(room);
+            setCurrentPage(PageType.ROOM_GRID);
+            setIsNotificationPanelOpen(false); // Close panel after click
+        }
     };
 
 
@@ -278,22 +320,26 @@ export const createUIHandlers = ({
         handleOpenAddRoomModal,
         handleOpenEditUsageModal,
         handleOpenCheckoutModal,
-        handleOpenTenantDetailModal,
         handleOpenAddUserModal,
         handleOpenEditUserModal,
+        handleOpenPaymentQRModal,
         handleNavigateToUserManagement,
         handleNavigateToInvoiceManagement,
+        handleNavigateToTenantArchive,
         handleNavigateToEditProfile,
         handleNavigateBackToGrid,
+        handleOpenTenantDetail,
         handleSuggestionClick,
         handleSearchKeyDown,
         handleUserPageChange,
         handleInvoicePageChange,
+        handleTenantArchivePageChange,
         handleRoomSelect,
         handleSetRoomFilter,
         handleExportInvoicesToExcel,
         handleEditInvoiceFromMgmt,
         handleDeleteInvoiceFromMgmt,
-        handleViewTenantFromMgmt,
+        handleToggleNotificationPanel,
+        handleNotificationClick,
     };
 };

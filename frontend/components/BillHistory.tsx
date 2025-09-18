@@ -1,6 +1,6 @@
 import React from 'react';
 import { UsageRecord } from '../types';
-import { PencilIcon, PrinterIcon, TrashIcon, IdentificationIcon } from './icons';
+import { PencilIcon, PrinterIcon, TrashIcon, IdentificationIcon, QrCodeIcon } from './icons';
 
 // The invoice object passed to handlers will have this shape
 type InvoiceWithRoomInfo = UsageRecord & { roomId?: string; roomName?: string };
@@ -11,7 +11,8 @@ interface BillHistoryProps {
     onOpenInvoice: (invoice: InvoiceWithRoomInfo) => void;
     onOpenEdit?: (invoice: InvoiceWithRoomInfo) => void;
     onDelete?: (invoice: InvoiceWithRoomInfo) => void;
-    onViewTenant: (invoice: InvoiceWithRoomInfo) => void;
+    onOpenTenantDetail: (invoice: InvoiceWithRoomInfo) => void;
+    onOpenPaymentQR?: (invoice: InvoiceWithRoomInfo) => void;
     canEdit: boolean;
     displayRoomInfo?: boolean; // To show the 'Room' column
 }
@@ -22,7 +23,8 @@ const BillHistory: React.FC<BillHistoryProps> = ({
     onOpenInvoice, 
     onOpenEdit, 
     onDelete, 
-    onViewTenant, 
+    onOpenTenantDetail,
+    onOpenPaymentQR,
     canEdit, 
     displayRoomInfo = false 
 }) => {
@@ -54,7 +56,9 @@ const BillHistory: React.FC<BillHistoryProps> = ({
                                 {displayRoomInfo && (
                                      <td className="px-4 py-4">
                                         <div className="font-medium text-slate-900 dark:text-white">{record.roomName}</div>
-                                        <div className="text-slate-500">{record.tenantSnapshot.name}</div>
+                                        <div className="text-slate-500 truncate" title={record.tenantsSnapshot.map(t => t.name).join(', ')}>
+                                            {record.tenantsSnapshot.map(t => t.name).join(', ') || 'N/A'}
+                                        </div>
                                     </td>
                                 )}
                                 <td className="px-4 py-4">{new Date(record.startDate).toLocaleDateString('vi-VN')} - {new Date(record.endDate).toLocaleDateString('vi-VN')}</td>
@@ -62,15 +66,24 @@ const BillHistory: React.FC<BillHistoryProps> = ({
                                 <td className="px-4 py-4">{record.waterUsage} ({record.waterReading})</td>
                                 <td className="px-4 py-4 font-semibold text-slate-900 dark:text-white">{record.billAmount.toLocaleString('vi-VN')}</td>
                                 <td className="px-4 py-4">
-                                    {record.isPaid ? (
-                                        <span className="text-teal-500 font-semibold">Đã thanh toán</span>
-                                    ) : (
-                                        <button disabled={!canEdit} onClick={() => onMarkAsPaid && onMarkAsPaid(record)} className="font-medium text-indigo-600 dark:text-indigo-500 hover:underline disabled:text-slate-400 disabled:no-underline disabled:cursor-not-allowed">Đánh dấu đã trả</button>
-                                    )}
+                                    <div className="flex items-center space-x-2">
+                                        {record.isPaid ? (
+                                            <span className="text-teal-500 font-semibold">Đã thanh toán</span>
+                                        ) : (
+                                            <>
+                                                <button disabled={!canEdit} onClick={() => onMarkAsPaid && onMarkAsPaid(record)} className="font-medium text-indigo-600 dark:text-indigo-500 hover:underline disabled:text-slate-400 disabled:no-underline disabled:cursor-not-allowed">Đánh dấu đã trả</button>
+                                                {canEdit && onOpenPaymentQR && (
+                                                    <button onClick={() => onOpenPaymentQR(record)} className="p-1.5 rounded-md text-slate-500 hover:bg-slate-200 hover:text-indigo-600 dark:text-slate-400 dark:hover:bg-slate-600 dark:hover:text-indigo-400" title="Tạo mã QR cho người thuê">
+                                                        <QrCodeIcon className="w-5 h-5" />
+                                                    </button>
+                                                )}
+                                            </>
+                                        )}
+                                    </div>
                                 </td>
                                 <td className="px-4 py-4">
                                     <div className="flex items-center justify-center space-x-2">
-                                        <button onClick={() => onViewTenant(record)} className="p-1.5 rounded-md text-slate-500 hover:bg-slate-200 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-slate-600 dark:hover:text-white transition" title="Xem chi tiết người thuê">
+                                        <button onClick={() => onOpenTenantDetail(record)} className="p-1.5 rounded-md text-slate-500 hover:bg-slate-200 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-slate-600 dark:hover:text-white transition" title="Xem chi tiết người thuê" disabled={record.tenantsSnapshot.length === 0}>
                                             <IdentificationIcon className="w-5 h-5" />
                                         </button>
                                         <button onClick={() => onOpenInvoice(record)} className="p-1.5 rounded-md text-slate-500 hover:bg-slate-200 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-slate-600 dark:hover:text-white transition" title="In hóa đơn">
@@ -95,12 +108,17 @@ const BillHistory: React.FC<BillHistoryProps> = ({
                     <div key={record.id} className="bg-slate-50 dark:bg-slate-800/60 p-3 rounded-lg border border-slate-200 dark:border-slate-700">
                         <div className="flex justify-between items-start mb-3">
                             <div>
-                                {displayRoomInfo && <p className="text-sm font-bold text-slate-800 dark:text-slate-100">{record.roomName} / {record.tenantSnapshot.name}</p>}
+                                {displayRoomInfo && (
+                                    <div className="mb-1">
+                                        <p className="text-sm font-bold text-slate-800 dark:text-slate-100">{record.roomName}</p>
+                                        <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{record.tenantsSnapshot.map(t => t.name).join(', ')}</p>
+                                    </div>
+                                )}
                                 <p className="font-semibold text-slate-800 dark:text-slate-100">Kỳ: {new Date(record.startDate).toLocaleDateString('vi-VN')} - {new Date(record.endDate).toLocaleDateString('vi-VN')}</p>
                                 <p className="text-lg font-bold text-indigo-600 dark:text-indigo-400">{record.billAmount.toLocaleString('vi-VN')} VND</p>
                             </div>
-                            <div className="flex items-center space-x-1">
-                                <button onClick={() => onViewTenant(record)} className="p-1.5 rounded-md text-slate-500 hover:bg-slate-200 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-slate-600 dark:hover:text-white transition" title="Xem chi tiết người thuê">
+                            <div className="flex flex-col items-center space-y-1">
+                                <button onClick={() => onOpenTenantDetail(record)} className="p-1.5 rounded-md text-slate-500 hover:bg-slate-200 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-slate-600 dark:hover:text-white transition" title="Xem chi tiết người thuê" disabled={record.tenantsSnapshot.length === 0}>
                                     <IdentificationIcon className="w-5 h-5" />
                                 </button>
                                 <button onClick={() => onOpenInvoice(record)} className="p-1.5 rounded-md text-slate-500 hover:bg-slate-200 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-slate-600 dark:hover:text-white transition" title="In hóa đơn">
@@ -122,7 +140,14 @@ const BillHistory: React.FC<BillHistoryProps> = ({
                             {record.isPaid ? (
                                 <span className="text-teal-600 dark:text-teal-400 font-semibold text-sm">✓ Đã thanh toán</span>
                             ) : (
-                                <button disabled={!canEdit} onClick={() => onMarkAsPaid && onMarkAsPaid(record)} className="w-full text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:ring-4 focus:outline-none focus:ring-indigo-300 rounded-lg px-3 py-1.5 text-center dark:bg-indigo-500 dark:hover:bg-indigo-600 dark:focus:ring-indigo-800 disabled:bg-slate-400 disabled:cursor-not-allowed">Đánh dấu đã trả</button>
+                                <div className="flex items-center space-x-2">
+                                    <button disabled={!canEdit} onClick={() => onMarkAsPaid && onMarkAsPaid(record)} className="flex-1 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:ring-4 focus:outline-none focus:ring-indigo-300 rounded-lg px-3 py-1.5 text-center dark:bg-indigo-500 dark:hover:bg-indigo-600 dark:focus:ring-indigo-800 disabled:bg-slate-400 disabled:cursor-not-allowed">Đánh dấu đã trả</button>
+                                    {canEdit && onOpenPaymentQR && (
+                                        <button onClick={() => onOpenPaymentQR(record)} className="p-2 rounded-md bg-slate-200 text-slate-600 hover:bg-slate-300 dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600" title="Tạo mã QR cho người thuê">
+                                            <QrCodeIcon className="w-5 h-5" />
+                                        </button>
+                                    )}
+                                </div>
                             )}
                         </div>
                     </div>

@@ -10,6 +10,7 @@ export interface Tenant {
   nationality?: string;
   placeOfOrigin?: string;
   placeOfResidence?: string;
+  occupation?: string;
 }
 
 export interface UsageRecord {
@@ -22,7 +23,7 @@ export interface UsageRecord {
   waterUsage: number;
   billAmount: number;
   isPaid: boolean;
-  tenantSnapshot: Tenant;
+  tenantsSnapshot: Tenant[];
 }
 
 export interface Room {
@@ -30,7 +31,7 @@ export interface Room {
   name: string;
   status: 'occupied' | 'vacant';
   baseRent: number;
-  tenant: Tenant | null;
+  tenants: Tenant[];
   usageHistory: UsageRecord[];
   archivedUsageHistory?: UsageRecord[];
   isPinned?: boolean;
@@ -45,23 +46,33 @@ export interface User {
   avatarUrl?: string;
 }
 
+export interface Notification {
+  id: string;
+  roomId: string;
+  recordId: string;
+  message: string;
+  date: string; // ISO string of the due date
+}
+
 export enum PageType {
   ROOM_GRID,
   USER_MANAGEMENT,
   EDIT_PROFILE,
   TENANT_VIEW,
   INVOICE_MANAGEMENT,
+  TENANT_ARCHIVE,
 }
 
 export enum ModalType {
     NONE,
     ADD_ROOM,
-    ASSIGN_TENANT,
+    MANAGE_TENANTS,
     RECORD_USAGE,
     EDIT_TENANT,
     EDIT_USAGE,
-    TENANT_DETAIL,
     ADD_USER,
     EDIT_USER,
     CHECK_OUT,
+    PAYMENT_QR,
+    VIEW_TENANT_DETAIL,
 }

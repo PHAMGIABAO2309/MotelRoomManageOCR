@@ -1,5 +1,5 @@
 import React from 'react';
-import { Room, ModalType, PageType } from '../types';
+import { Room, ModalType, PageType, Tenant } from '../types';
 
 import RoomCard from './RoomCard';
 import RoomDetailView from './RoomDetailView';
@@ -7,39 +7,44 @@ import UserManagementView from './UserManagementView';
 import InvoiceManagementView from './InvoiceManagementView';
 import EditProfileView from './EditProfileView';
 import TenantView from './TenantView';
+import TenantArchiveView from './TenantArchiveView';
 
 const MainContent: React.FC<{ appLogic: any }> = ({ appLogic }) => {
     const {
         rooms, selectedRoom, currentUser, tenantRoom, currentPage,
         searchQuery, draggedItem, dragOverItem, userSearchQuery, userCurrentPage,
-        openModal, handleMarkAsPaid, handleRemoveTenant, handleOpenInvoiceModal,
-        handleOpenEditUsageModal, handleOpenDeleteInvoiceConfirm, handleOpenTenantDetailModal,
+        openModal, handleMarkAsPaid, handleOpenInvoiceModal,
+        handleOpenEditUsageModal, handleOpenDeleteInvoiceConfirm,
         handleOpenAddUserModal, handleOpenEditUserModal, handleOpenDeleteUserConfirm,
-        handleUpdateProfile, handleNavigateBackToGrid,
+        handleUpdateProfile, handleNavigateBackToGrid, handleOpenTenantDetail,
         handleDragStart, handleDragEnter, handleDragEnd,
         handleTouchStart, handleTouchMove, handleTouchEnd,
         handleUserPageChange, handleTogglePin,
         filteredRooms, paginatedUsers, totalUserPages, filteredUsers,
         canEdit,
         setSelectedRoom, setSearchQuery, setUserSearchQuery, handleOpenCheckoutModal,
+        handleOpenPaymentQRModal,
         // Invoice Page Props
         paginatedInvoices, totalInvoicePages, invoiceCurrentPage, invoiceFilterRoomId, invoiceFilterStatus, invoiceSortBy, invoiceSearchQuery,
         setInvoiceFilterRoomId, setInvoiceFilterStatus, setInvoiceSortBy, setInvoiceSearchQuery,
         handleInvoicePageChange, handleExportInvoicesToExcel, filteredAndSortedInvoices,
-        handleEditInvoiceFromMgmt, handleDeleteInvoiceFromMgmt, handleViewTenantFromMgmt
+        handleEditInvoiceFromMgmt, handleDeleteInvoiceFromMgmt,
+        // Tenant Archive Props
+        paginatedTenants, totalTenantPages, tenantArchiveCurrentPage, tenantArchiveSearchQuery,
+        setTenantArchiveSearchQuery, handleTenantArchivePageChange, allTenants,
+        tenantArchiveFilterRoomId, setTenantArchiveFilterRoomId,
     } = appLogic;
 
-    const handleOpenModal = (type: 'assignTenant' | 'recordUsage' | 'editTenant') => {
+    const handleOpenModal = (type: 'manageTenants' | 'recordUsage') => {
         switch (type) {
-            case 'assignTenant': openModal(ModalType.ASSIGN_TENANT); break;
+            case 'manageTenants': openModal(ModalType.MANAGE_TENANTS); break;
             case 'recordUsage': openModal(ModalType.RECORD_USAGE); break;
-            case 'editTenant': openModal(ModalType.EDIT_TENANT); break;
         }
     }
 
     if (currentUser?.role === 'Tenant') {
         if (!tenantRoom) return <p>Đang tải thông tin phòng...</p>;
-        return <TenantView room={tenantRoom} onOpenInvoice={handleOpenInvoiceModal} />;
+        return <TenantView room={tenantRoom} currentUser={currentUser} onOpenInvoice={handleOpenInvoiceModal} onOpenPaymentQRModal={handleOpenPaymentQRModal} />;
     }
 
     switch (currentPage) {
@@ -77,12 +82,29 @@ const MainContent: React.FC<{ appLogic: any }> = ({ appLogic }) => {
                     sortBy={invoiceSortBy}
                     onSortByChange={setInvoiceSortBy}
                     onOpenInvoice={handleOpenInvoiceModal}
+                    onOpenPaymentQRModal={handleOpenPaymentQRModal}
                     onMarkAsPaid={handleMarkAsPaid}
                     canEdit={canEdit}
                     onExportToExcel={handleExportInvoicesToExcel}
                     onEditInvoice={handleEditInvoiceFromMgmt}
                     onDeleteInvoice={handleDeleteInvoiceFromMgmt}
-                    onViewTenant={handleViewTenantFromMgmt}
+                    onOpenTenantDetail={handleOpenTenantDetail}
+                />
+            );
+        case PageType.TENANT_ARCHIVE:
+             return (
+                <TenantArchiveView
+                    tenants={paginatedTenants}
+                    searchQuery={tenantArchiveSearchQuery}
+                    onSearchChange={setTenantArchiveSearchQuery}
+                    currentPage={tenantArchiveCurrentPage}
+                    totalPages={totalTenantPages}
+                    onPageChange={handleTenantArchivePageChange}
+                    totalTenants={allTenants.length}
+                    rooms={rooms}
+                    filterRoomId={tenantArchiveFilterRoomId}
+                    onFilterRoomIdChange={setTenantArchiveFilterRoomId}
+                    onOpenTenantDetail={handleOpenTenantDetail}
                 />
             );
         case PageType.EDIT_PROFILE:
@@ -106,13 +128,13 @@ const MainContent: React.FC<{ appLogic: any }> = ({ appLogic }) => {
                         onBack={() => { setSelectedRoom(null); setSearchQuery(''); }}
                         onOpenModal={handleOpenModal}
                         onMarkAsPaid={handleMarkAsPaid}
-                        onRemoveTenant={handleRemoveTenant}
                         onOpenInvoice={handleOpenInvoiceModal}
                         onOpenEditUsageModal={handleOpenEditUsageModal}
                         onDeleteUsageRecord={handleOpenDeleteInvoiceConfirm}
-                        onOpenTenantDetail={handleOpenTenantDetailModal}
+                        onOpenTenantDetail={handleOpenTenantDetail}
                         canEdit={canEdit}
                         onOpenCheckoutModal={handleOpenCheckoutModal}
+                        onOpenPaymentQRModal={handleOpenPaymentQRModal}
                     />
                 );
             }
@@ -127,7 +149,7 @@ const MainContent: React.FC<{ appLogic: any }> = ({ appLogic }) => {
                             searchQuery={searchQuery} 
                             draggedItem={draggedItem} 
                             dragOverItem={dragOverItem} 
-                            onDragStart={(e, room) => handleDragStart(room)} 
+                            onDragStart={(e) => handleDragStart(room)} 
                             onDragEnter={(e, room) => handleDragEnter(room)} 
                             onDragEnd={handleDragEnd} 
                             onTogglePin={handleTogglePin}

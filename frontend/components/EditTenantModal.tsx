@@ -22,6 +22,7 @@ const EditTenantModal: React.FC<EditTenantModalProps> = ({ isOpen, onClose, onEd
   const [nationality, setNationality] = useState(tenant.nationality || '');
   const [placeOfOrigin, setPlaceOfOrigin] = useState(tenant.placeOfOrigin || '');
   const [placeOfResidence, setPlaceOfResidence] = useState(tenant.placeOfResidence || '');
+  const [occupation, setOccupation] = useState(tenant.occupation || '');
 
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState('');
@@ -41,6 +42,7 @@ const EditTenantModal: React.FC<EditTenantModalProps> = ({ isOpen, onClose, onEd
         setNationality(tenant.nationality || '');
         setPlaceOfOrigin(tenant.placeOfOrigin || '');
         setPlaceOfResidence(tenant.placeOfResidence || '');
+        setOccupation(tenant.occupation || '');
         setPreviewUrl(tenant.avatarUrl || '');
         setError('');
         setOcrFile(null);
@@ -163,19 +165,21 @@ Nếu không tìm thấy thông tin nào, hãy để giá trị là một chuỗ
       nationality,
       placeOfOrigin,
       placeOfResidence,
+      occupation,
     };
     onEditTenant(updatedTenant);
     onClose();
   };
 
   const inputClass = "bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-full p-2.5 dark:bg-slate-700 dark:border-slate-600 dark:placeholder-slate-400 dark:text-white";
+  const labelClass = "block mb-2 text-sm font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 dark:from-indigo-400 dark:via-purple-400 dark:to-pink-400";
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Chỉnh Sửa Thông Tin Người Thuê">
       <form onSubmit={handleSubmit}>
         <div className="max-h-[70vh] overflow-y-auto pr-2 space-y-4">
             <div className="space-y-2 p-3 bg-slate-50 dark:bg-slate-700/50 rounded-lg border border-slate-200 dark:border-slate-700">
-                <label className="block text-sm font-medium text-slate-900 dark:text-white">Tải lên CCCD để điền tự động</label>
+                <label className={labelClass}>Tải lên CCCD để điền tự động</label>
                 <div className="flex items-center space-x-4">
                     <div className="flex-shrink-0">
                        {previewUrl ? (
@@ -201,39 +205,43 @@ Nếu không tìm thấy thông tin nào, hãy để giá trị là một chuỗ
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label htmlFor="tenantName" className="block mb-2 text-sm font-medium text-slate-900 dark:text-white">Họ và tên</label>
+                  <label htmlFor="tenantName" className={labelClass}>Họ và tên</label>
                   <input type="text" id="tenantName" value={name} onChange={(e) => setName(e.target.value)} className={inputClass} required />
                 </div>
                 <div>
-                  <label htmlFor="idNumber" className="block mb-2 text-sm font-medium text-slate-900 dark:text-white">Số CCCD</label>
+                  <label htmlFor="idNumber" className={labelClass}>Số CCCD</label>
                   <input type="text" id="idNumber" value={idNumber} onChange={(e) => setIdNumber(e.target.value)} className={inputClass} />
                 </div>
                 <div>
-                  <label htmlFor="dateOfBirth" className="block mb-2 text-sm font-medium text-slate-900 dark:text-white">Ngày sinh</label>
+                  <label htmlFor="dateOfBirth" className={labelClass}>Ngày sinh</label>
                   <input type="date" id="dateOfBirth" value={dateOfBirth} onChange={(e) => setDateOfBirth(e.target.value)} className={inputClass} />
                 </div>
                  <div>
-                  <label htmlFor="sex" className="block mb-2 text-sm font-medium text-slate-900 dark:text-white">Giới tính</label>
+                  <label htmlFor="sex" className={labelClass}>Giới tính</label>
                   <input type="text" id="sex" value={sex} onChange={(e) => setSex(e.target.value)} className={inputClass} />
                 </div>
                 <div>
-                  <label htmlFor="nationality" className="block mb-2 text-sm font-medium text-slate-900 dark:text-white">Quốc tịch</label>
+                  <label htmlFor="nationality" className={labelClass}>Quốc tịch</label>
                   <input type="text" id="nationality" value={nationality} onChange={(e) => setNationality(e.target.value)} className={inputClass} />
                 </div>
-                <div>
-                  <label htmlFor="tenantPhone" className="block mb-2 text-sm font-medium text-slate-900 dark:text-white">Số điện thoại</label>
+                 <div>
+                  <label htmlFor="occupation" className={labelClass}>Nghề nghiệp</label>
+                  <input type="text" id="occupation" value={occupation} onChange={(e) => setOccupation(e.target.value)} className={inputClass} />
+                </div>
+                <div className="md:col-span-2">
+                  <label htmlFor="tenantPhone" className={labelClass}>Số điện thoại</label>
                   <input type="tel" id="tenantPhone" value={phone} onChange={(e) => setPhone(e.target.value)} className={inputClass} required />
                 </div>
                 <div className="md:col-span-2">
-                    <label htmlFor="placeOfOrigin" className="block mb-2 text-sm font-medium text-slate-900 dark:text-white">Quê quán</label>
+                    <label htmlFor="placeOfOrigin" className={labelClass}>Quê quán</label>
                     <textarea id="placeOfOrigin" value={placeOfOrigin} onChange={(e) => setPlaceOfOrigin(e.target.value)} rows={2} className={inputClass}></textarea>
                 </div>
                 <div className="md:col-span-2">
-                    <label htmlFor="placeOfResidence" className="block mb-2 text-sm font-medium text-slate-900 dark:text-white">Nơi thường trú</label>
+                    <label htmlFor="placeOfResidence" className={labelClass}>Nơi thường trú</label>
                     <textarea id="placeOfResidence" value={placeOfResidence} onChange={(e) => setPlaceOfResidence(e.target.value)} rows={2} className={inputClass}></textarea>
                 </div>
                  <div className="md:col-span-2">
-                  <label htmlFor="moveInDate" className="block mb-2 text-sm font-medium text-slate-900 dark:text-white">Ngày chuyển vào</label>
+                  <label htmlFor="moveInDate" className={labelClass}>Ngày chuyển vào</label>
                   <input type="date" id="moveInDate" value={moveInDate} onChange={(e) => setMoveInDate(e.target.value)} className={inputClass} required />
                 </div>
             </div>

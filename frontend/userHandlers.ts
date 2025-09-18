@@ -1,15 +1,4 @@
-import { PageType } from './types';
-
-// Moved and improved the normalization function for better performance and reliability.
-const normalizeVietnamese = (str: string) => {
-    if (!str) return '';
-    return str
-        .toLowerCase()
-        .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, "") // Remove accents
-        .replace(/đ/g, 'd') // Convert 'đ' to 'd'
-        .replace(/[^a-z0-9]/g, ''); // Remove all non-alphanumeric characters
-};
+import { PageType, Tenant } from './types';
 
 export const createUserHandlers = ({
     users,
@@ -29,6 +18,7 @@ export const createUserHandlers = ({
     type AuthenticatedUser = any; // Simplified for brevity
 
     const handleLogin = (username: string, password: string): boolean => {
+        // Try to log in as admin/staff first
         const user = users.find((u: any) => u.username.toLowerCase() === username.toLowerCase() && u.password === password);
         if (user) {
             setIsLoggedIn(true);
@@ -38,39 +28,26 @@ export const createUserHandlers = ({
             return true;
         }
         
-        const roomMatch = rooms.find((room: any) => {
-            if (!room.tenant) {
-                return false;
+        // Try to log in as a tenant (username is room name, password is phone number)
+        const roomMatch = rooms.find((room: any) => 
+            room.name.toLowerCase().replace(/\s/g, '') === username.toLowerCase().replace(/\s/g, '')
+        );
+
+        if (roomMatch && roomMatch.tenants && roomMatch.tenants.length > 0) {
+            const tenantMatch = roomMatch.tenants.find((t: Tenant) => t.phone === password);
+            if (tenantMatch) {
+                const tenantUser: AuthenticatedUser = {
+                    id: tenantMatch.id,
+                    name: tenantMatch.name,
+                    username: roomMatch.name, // The room name is the username
+                    role: 'Tenant'
+                };
+                setIsLoggedIn(true);
+                setCurrentUser(tenantUser);
+                setTenantRoom(roomMatch);
+                setCurrentPage(PageType.TENANT_VIEW);
+                return true;
             }
-
-            // Extract number from room name, e.g., "Phòng 101" -> "101"
-            const roomNumberMatch = room.name.match(/\d+/);
-            if (!roomNumberMatch) {
-                return false;
-            }
-            const roomNumber = roomNumberMatch[0];
-
-            // Construct expected credentials
-            const expectedUsername = `phong${roomNumber}`;
-            const expectedPassword = roomNumber;
-
-            // Compare with user input
-            return normalizeVietnamese(username) === expectedUsername && password === expectedPassword;
-        });
-
-
-        if (roomMatch && roomMatch.tenant) {
-            const tenantUser: AuthenticatedUser = {
-                id: roomMatch.tenant.id,
-                name: roomMatch.tenant.name,
-                username: roomMatch.name,
-                role: 'Tenant'
-            };
-            setIsLoggedIn(true);
-            setCurrentUser(tenantUser);
-            setTenantRoom(roomMatch);
-            setCurrentPage(PageType.TENANT_VIEW);
-            return true;
         }
         return false;
     };

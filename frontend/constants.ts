@@ -8,6 +8,7 @@ export const LANDLORD_INFO = {
     phone: "0987 654 321",
     bankAccount: "1234567890",
     bankName: "Ngân hàng Vietcombank",
+    bankBin: "970436", // BIN/ACQ ID for Vietcombank
     accountHolder: "CHỦ NHÀ TRỌ",
 };
 

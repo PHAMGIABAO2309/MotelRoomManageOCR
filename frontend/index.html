@@ -22,6 +22,7 @@
               'fade-in-left': 'fadeInLeft 0.4s ease-out forwards',
               'pulse-glow': 'pulseGlow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
               'aurora': 'aurora 6s linear infinite',
+              'aurora-background': 'aurora-background 20s ease-in-out infinite',
               'spin-slow': 'spin 3s linear infinite',
               'aurora-flow': 'aurora-flow 15s ease-in-out infinite',
             },
@@ -45,6 +46,11 @@
               aurora: {
                 '0%, 100%': { backgroundPosition: '0% 50%' },
                 '50%': { backgroundPosition: '100% 50%' },
+              },
+              'aurora-background': {
+                '0%': { backgroundPosition: '0% 50%' },
+                '50%': { backgroundPosition: '100% 50%' },
+                '100%': { backgroundPosition: '0% 50%' },
               },
               'aurora-flow': {
                 '0%': { backgroundPosition: '0% 50%' },
@@ -91,14 +97,18 @@
     /* Default body background styles */
     body {
         background-color: #f1f5f9; /* bg-slate-100 */
+        background-image: linear-gradient(125deg, #e0f2fe, #f3e8ff, #fefce8, #e0f2fe);
+        background-size: 400% 400%;
+        animation: aurora-background 20s ease-in-out infinite;
         transition: background-color 0.5s ease;
     }
     .dark body {
         background-color: #0f172a; /* bg-slate-900 */
+        background-image: linear-gradient(125deg, #020617, #1e1b4b, #422006, #020617);
     }
 
-    /* Animated background for the main grid view */
-    body.aurora-background-active {
+    /* Animated background for specific views (optional) */
+    .aurora-subtle-background {
       background-color: #f1f5f9;
       background-image: radial-gradient(ellipse at top, rgba(99, 102, 241, 0.2), transparent),
                         radial-gradient(ellipse at bottom, rgba(168, 85, 247, 0.2), transparent);
@@ -106,7 +116,7 @@
       animation: aurora-flow 15s ease-in-out infinite;
     }
 
-    .dark body.aurora-background-active {
+    .dark .aurora-subtle-background {
       background-color: #0f172a;
       background-image: radial-gradient(ellipse at top, rgba(99, 102, 241, 0.3), transparent),
                         radial-gradient(ellipse at bottom, rgba(168, 85, 247, 0.3), transparent);
@@ -114,7 +124,7 @@
   </style>
 <link rel="stylesheet" href="/index.css">
 </head>
-  <body class="dark:bg-slate-900 font-sans">
+  <body class="font-sans">
     <div id="root"></div>
     <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
     <script type="module" src="/index.tsx"></script>
